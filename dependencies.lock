@@ -1,0 +1,17 @@
+dependencies:
+  esp_lcd_ili9488:
+    dependencies: []
+    source:
+      path: C:\Users\branc\Documents\Proyectos\Colven\5_Corte_20mm\Software\components\esp_lcd_ili9488
+      type: local
+    version: 1.1.0
+  idf:
+    source:
+      type: idf
+    version: 5.5.1
+direct_dependencies:
+- espressif/esp_lcd_ili9488
+- idf
+manifest_hash: 01e519756381eb6afcb380898db079ccfc523f47c9506b306548b90bfff9f1de
+target: esp32
+version: 2.0.0

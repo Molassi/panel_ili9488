@@ -1,0 +1,11 @@
+# ESP-IDF
+build/
+sdkconfig.old
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
