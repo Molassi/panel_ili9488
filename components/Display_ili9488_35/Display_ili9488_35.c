@@ -128,3 +128,90 @@ void display_debug_cycle(void){
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
+
+esp_err_t display_ili9488_35_draw_rgb565(int x, int y, int w, int h, const uint16_t *img_rgb565)
+{
+    if (!s_panel || !img_rgb565) return ESP_ERR_INVALID_STATE;
+    if (w <= 0 || h <= 0) return ESP_ERR_INVALID_ARG;
+
+    // límites pantalla
+    if (x < 0 || y < 0 || (x + w) > s_hres || (y + h) > s_vres) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    return esp_lcd_panel_draw_bitmap(s_panel, x, y, x + w, y + h, (void *)img_rgb565);
+}
+
+esp_err_t display_ili9488_35_draw_fullscreen_rgb565(const uint16_t *img_rgb565)
+{
+    return display_ili9488_35_draw_rgb565(0, 0, s_hres, s_vres, img_rgb565);
+}
+
+esp_err_t display_ili9488_35_draw_rgb565_rot90(int x, int y, int src_w, int src_h, const uint16_t *src_rgb565, display_rot90_t rot)
+{
+    if (!s_panel || !src_rgb565) return ESP_ERR_INVALID_STATE;
+    if (src_w <= 0 || src_h <= 0) return ESP_ERR_INVALID_ARG;
+
+    // Dimensiones destino luego de rotar 90°
+    const int dst_w = src_h;
+    const int dst_h = src_w;
+
+    // límites pantalla
+    if (x < 0 || y < 0 || (x + dst_w) > s_hres || (y + dst_h) > s_vres) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    // Usamos un bloque de líneas destino (por ejemplo s_lines)
+    const int lines = s_lines;
+    const int block_h = (lines > 0) ? lines : 40;
+
+    // Buffer DMA para un bloque destino: dst_w * block_h
+    uint16_t *blk = heap_caps_malloc((size_t)dst_w * (size_t)block_h * sizeof(uint16_t), MALLOC_CAP_DMA);
+    if (!blk) return ESP_ERR_NO_MEM;
+
+    for (int dst_y = 0; dst_y < dst_h; dst_y += block_h) {
+        int cur_h = block_h;
+        if (dst_y + cur_h > dst_h) cur_h = dst_h - dst_y;
+
+        // Rellenar bloque rotado: para cada pixel destino (dx, dy) calculamos fuente (sx, sy)
+        for (int dy = 0; dy < cur_h; dy++) {
+            const int y_out = dst_y + dy;
+
+            for (int dx = 0; dx < dst_w; dx++) {
+                int sx, sy;
+
+                if (rot == DISP_ROT_90_CW) {
+                    // (dst_x, dst_y) = rot90CW(src_x, src_y)
+                    // dst_w = src_h, dst_h = src_w
+                    // sx = y_out
+                    // sy = src_h - 1 - dx
+                    sx = y_out;
+                    sy = src_h - 1 - dx;
+                } else {
+                    // rot90CCW
+                    // sx = src_w - 1 - y_out
+                    // sy = dx
+                    sx = src_w - 1 - y_out;
+                    sy = dx;
+                }
+
+                blk[(size_t)dy * (size_t)dst_w + (size_t)dx] = src_rgb565[(size_t)sy * (size_t)src_w + (size_t)sx];
+            }
+        }
+
+        // Dibujar este bloque en pantalla
+        esp_err_t err = esp_lcd_panel_draw_bitmap(
+            s_panel,
+            x, y + dst_y,
+            x + dst_w, y + dst_y + cur_h,
+            blk
+        );
+        if (err != ESP_OK) {
+            heap_caps_free(blk);
+            return err;
+        }
+    }
+
+    heap_caps_free(blk);
+    return ESP_OK;
+}

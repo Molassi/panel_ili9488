@@ -2,7 +2,9 @@
 #include "freertos/task.h"
 #include "esp_log.h"
 
-#include "Display_ili9488_35.h"
+#include "COLVEN_LOGO.c"
+
+#include "Display_ili9488_35.h"         //componente
 
 static const char *TAG = "APP_main:";
 
@@ -26,11 +28,14 @@ void app_main(void)
     ESP_LOGI(TAG, "Init display component...");
     ESP_ERROR_CHECK(display_ili9488_35_init(&cfg));
 
-    display_debug_cycle(); //Se utiliza solo para probar hardware.
+    display_ili9488_35_draw_rgb565_rot90(0, 0, 480, 320, COLVEN_LOGO_480_320, DISP_ROT_90_CCW);
+
+
+    //display_debug_cycle(); //Se utiliza solo para probar hardware.
 
     while (1)
     {
-        /* code */
+        vTaskDelay(1);
     }
     
 }
