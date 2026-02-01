@@ -30,6 +30,8 @@ typedef struct {
 esp_err_t display_ili9488_35_init(const display_ili9488_35_cfg_t *cfg);
 esp_err_t display_ili9488_35_fill_rgb565(uint16_t color);
 
+void display_debug_cycle(void);
+
 #ifdef __cplusplus
 }
 #endif

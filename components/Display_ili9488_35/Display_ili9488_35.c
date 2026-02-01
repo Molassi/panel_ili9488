@@ -2,12 +2,22 @@
 
 #include <assert.h>
 #include <stddef.h>
+#include "esp_log.h"
 
 #include "esp_heap_caps.h"
 #include "esp_lcd_ili9488.h"
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_ops.h"
 #include "esp_lcd_panel_dev.h"
+
+/* Colores RGB565 */
+#define RED   0xF800
+#define GREEN 0x07E0
+#define BLUE  0x001F
+#define WHITE 0xFFFF
+#define BLACK 0x0000
+
+static const char *TAG = "Display check:";
 
 // --- Estado interno del componente ---
 static esp_lcd_panel_io_handle_t s_io = NULL;
@@ -93,4 +103,28 @@ esp_err_t display_ili9488_35_fill_rgb565(uint16_t color)
     }
 
     return ESP_OK;
+}
+
+void display_debug_cycle(void){
+    while (1) {
+        ESP_LOGI(TAG, "ROJO");
+        ESP_ERROR_CHECK(display_ili9488_35_fill_rgb565(RED));
+        vTaskDelay(pdMS_TO_TICKS(1000));
+
+        ESP_LOGI(TAG, "VERDE");
+        ESP_ERROR_CHECK(display_ili9488_35_fill_rgb565(GREEN));
+        vTaskDelay(pdMS_TO_TICKS(1000));
+
+        ESP_LOGI(TAG, "AZUL");
+        ESP_ERROR_CHECK(display_ili9488_35_fill_rgb565(BLUE));
+        vTaskDelay(pdMS_TO_TICKS(1000));
+
+        ESP_LOGI(TAG, "BLANCO");
+        ESP_ERROR_CHECK(display_ili9488_35_fill_rgb565(WHITE));
+        vTaskDelay(pdMS_TO_TICKS(1000));
+
+        ESP_LOGI(TAG, "NEGRO");
+        ESP_ERROR_CHECK(display_ili9488_35_fill_rgb565(BLACK));
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
 }
