@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <stddef.h>
 #include "esp_log.h"
+#include <string.h>
+#include "esp_heap_caps.h"
 
 #include "esp_heap_caps.h"
 #include "esp_lcd_ili9488.h"
@@ -215,3 +217,193 @@ esp_err_t display_ili9488_35_draw_rgb565_rot90(int x, int y, int src_w, int src_
     heap_caps_free(blk);
     return ESP_OK;
 }
+
+static const uint8_t font8x8_min[ ((']' - ' ') + 1) ][8] = {
+    // ' ' (32)
+    [ ' ' - ' ' ] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00},
+
+    // '-' (45)
+    [ '-' - ' ' ] = {0x00,0x00,0x00,0x7E,0x00,0x00,0x00,0x00},
+
+    // ':' (58)
+    [ ':' - ' ' ] = {0x00,0x18,0x18,0x00,0x00,0x18,0x18,0x00},
+
+    // '0'..'9' (48-57)
+    [ '0' - ' ' ] = {0x3C,0x66,0x6E,0x76,0x66,0x66,0x3C,0x00},
+    [ '1' - ' ' ] = {0x18,0x38,0x18,0x18,0x18,0x18,0x7E,0x00},
+    [ '2' - ' ' ] = {0x3C,0x66,0x06,0x0C,0x30,0x60,0x7E,0x00},
+    [ '3' - ' ' ] = {0x3C,0x66,0x06,0x1C,0x06,0x66,0x3C,0x00},
+    [ '4' - ' ' ] = {0x0C,0x1C,0x3C,0x6C,0x7E,0x0C,0x0C,0x00},
+    [ '5' - ' ' ] = {0x7E,0x60,0x7C,0x06,0x06,0x66,0x3C,0x00},
+    [ '6' - ' ' ] = {0x1C,0x30,0x60,0x7C,0x66,0x66,0x3C,0x00},
+    [ '7' - ' ' ] = {0x7E,0x66,0x06,0x0C,0x18,0x18,0x18,0x00},
+    [ '8' - ' ' ] = {0x3C,0x66,0x66,0x3C,0x66,0x66,0x3C,0x00},
+    [ '9' - ' ' ] = {0x3C,0x66,0x66,0x3E,0x06,0x0C,0x38,0x00},
+
+    // 'A'..'Z' (65-90)
+    [ 'A' - ' ' ] = {0x18,0x3C,0x66,0x66,0x7E,0x66,0x66,0x00},
+    [ 'B' - ' ' ] = {0x7C,0x66,0x66,0x7C,0x66,0x66,0x7C,0x00},
+    [ 'C' - ' ' ] = {0x3C,0x66,0x60,0x60,0x60,0x66,0x3C,0x00},
+    [ 'D' - ' ' ] = {0x78,0x6C,0x66,0x66,0x66,0x6C,0x78,0x00},
+    [ 'E' - ' ' ] = {0x7E,0x60,0x60,0x7C,0x60,0x60,0x7E,0x00},
+    [ 'F' - ' ' ] = {0x7E,0x60,0x60,0x7C,0x60,0x60,0x60,0x00},
+    [ 'G' - ' ' ] = {0x3C,0x66,0x60,0x6E,0x66,0x66,0x3C,0x00},
+    [ 'H' - ' ' ] = {0x66,0x66,0x66,0x7E,0x66,0x66,0x66,0x00},
+    [ 'I' - ' ' ] = {0x3C,0x18,0x18,0x18,0x18,0x18,0x3C,0x00},
+    [ 'J' - ' ' ] = {0x1E,0x0C,0x0C,0x0C,0x0C,0x6C,0x38,0x00},
+    [ 'K' - ' ' ] = {0x66,0x6C,0x78,0x70,0x78,0x6C,0x66,0x00},
+    [ 'L' - ' ' ] = {0x60,0x60,0x60,0x60,0x60,0x60,0x7E,0x00},
+    [ 'M' - ' ' ] = {0x63,0x77,0x7F,0x6B,0x63,0x63,0x63,0x00},
+    [ 'N' - ' ' ] = {0x66,0x76,0x7E,0x6E,0x66,0x66,0x66,0x00},
+    [ 'O' - ' ' ] = {0x3C,0x66,0x66,0x66,0x66,0x66,0x3C,0x00},
+    [ 'P' - ' ' ] = {0x7C,0x66,0x66,0x7C,0x60,0x60,0x60,0x00},
+    [ 'Q' - ' ' ] = {0x3C,0x66,0x66,0x66,0x6E,0x3C,0x0E,0x00},
+    [ 'R' - ' ' ] = {0x7C,0x66,0x66,0x7C,0x6C,0x66,0x66,0x00},
+    [ 'S' - ' ' ] = {0x3C,0x66,0x60,0x3C,0x06,0x66,0x3C,0x00},
+    [ 'T' - ' ' ] = {0x7E,0x5A,0x18,0x18,0x18,0x18,0x3C,0x00},
+    [ 'U' - ' ' ] = {0x66,0x66,0x66,0x66,0x66,0x66,0x3C,0x00},
+    [ 'V' - ' ' ] = {0x66,0x66,0x66,0x66,0x66,0x3C,0x18,0x00},
+    [ 'W' - ' ' ] = {0x63,0x63,0x63,0x6B,0x7F,0x77,0x63,0x00},
+    [ 'X' - ' ' ] = {0x66,0x66,0x3C,0x18,0x3C,0x66,0x66,0x00},
+    [ 'Y' - ' ' ] = {0x66,0x66,0x66,0x3C,0x18,0x18,0x18,0x00},
+    [ 'Z' - ' ' ] = {0x7E,0x06,0x0C,0x18,0x30,0x60,0x7E,0x00},
+
+    // Símbolos adicionales (91-93)
+    [ '[' - ' ' ] = {0x3C,0x30,0x30,0x30,0x30,0x30,0x3C,0x00},
+    [ ']' - ' ' ] = {0x3C,0x0C,0x0C,0x0C,0x0C,0x0C,0x3C,0x00},
+};
+
+static inline const uint8_t *glyph8x8(char c)
+{
+    if (c < ' ' || c > 'Z') c = ' ';
+    const uint8_t *g = font8x8_min[c - ' '];
+    // si no está definido (todo 0), lo dejamos como espacio
+    return g;
+}
+
+// Dibuja un char 8x8 escalado (scale=1..N)
+static esp_err_t draw_char8x8_scaled(int x, int y, char c, uint16_t fg, uint16_t bg, int scale)
+{
+    if (scale < 1) scale = 1;
+
+    const uint8_t *g = glyph8x8(c);
+
+    // buffer temporal: 8*scale por 8*scale
+    const int w = 8 * scale;
+    const int h = 8 * scale;
+
+    // OJO: para tamaños grandes conviene hacerlo por líneas, pero para prueba está ok.
+    uint16_t pix[w * h];
+
+    for (int row = 0; row < 8; row++) {
+        uint8_t bits = g[row];
+        for (int col = 0; col < 8; col++) {
+            int on = (bits >> (7 - col)) & 1;  // MSB->LSB
+            uint16_t color = on ? fg : bg;
+
+            // pintar bloque scale x scale
+            for (int yy = 0; yy < scale; yy++) {
+                for (int xx = 0; xx < scale; xx++) {
+                    int dx = col * scale + xx;
+                    int dy = row * scale + yy;
+                    pix[dy * w + dx] = color;
+                }
+            }
+        }
+    }
+
+    return esp_lcd_panel_draw_bitmap(s_panel, x, y, x + w, y + h, pix);
+}
+
+esp_err_t display_ili9488_35_draw_text_8x8(int x, int y, const char *txt, uint16_t fg, uint16_t bg, int scale)
+{
+    if (!s_panel || !txt) return ESP_ERR_INVALID_STATE;
+
+    int cx = x;
+    int cy = y;
+    const int step = 8 * (scale < 1 ? 1 : scale);
+
+    for (size_t i = 0; txt[i]; i++) {
+        char c = txt[i];
+        if (c == '\n') {
+            cy += step + (scale * 2);
+            cx = x;
+            continue;
+        }
+
+        esp_err_t err = draw_char8x8_scaled(cx, cy, c, fg, bg, scale);
+        if (err != ESP_OK) return err;
+        cx += step;
+    }
+
+    return ESP_OK;
+}
+
+
+// Reusa tu función interna actual que dibuja UN char o tu tabla font.
+// Asumo que ya tenés un mecanismo de font dentro del .c.
+// Si tu función de texto actual ya pinta chars usando un glyph 8x8,
+// acá reutilizamos el mismo glyph y dibujamos sobre un buffer.
+
+static inline const uint8_t *glyph8x8(char c); // <- si ya la tenés, BORRAR esta línea
+// Si NO tenés glyph8x8, decime y te adapto al método que estés usando.
+
+esp_err_t display_ili9488_35_draw_text_8x8_rot90(int x, int y, const char *txt,
+                                                 uint16_t fg, uint16_t bg, int scale,
+                                                 display_rot90_t rot)
+{
+    if (!txt) return ESP_ERR_INVALID_ARG;
+    if (scale < 1) scale = 1;
+
+    // 1) calcular tamaño del bloque de texto (simple: una sola línea)
+    // Si querés soportar '\n', lo ampliamos luego.
+    const int len = (int)strlen(txt);
+    const int char_w = 8 * scale;
+    const int char_h = 8 * scale;
+
+    const int w = len * char_w;
+    const int h = char_h;
+
+    // 2) reservar buffer RGB565 en DMA (mejor, así draw_bitmap no sufre)
+    uint16_t *buf = heap_caps_malloc((size_t)w * (size_t)h * sizeof(uint16_t), MALLOC_CAP_DMA);
+    if (!buf) return ESP_ERR_NO_MEM;
+
+    // 3) fondo
+    for (int i = 0; i < w * h; i++) buf[i] = bg;
+
+    // 4) renderizar cada char en el buffer (8x8 escalado)
+    for (int ci = 0; ci < len; ci++) {
+        char c = txt[ci];
+        if (c < 32 || c > 127) c = ' ';
+
+        const uint8_t *g = glyph8x8(c);  // debe devolver 8 bytes (filas)
+
+        const int x0 = ci * char_w;
+
+        for (int row = 0; row < 8; row++) {
+            uint8_t bits = g[row];
+
+            for (int col = 0; col < 8; col++) {
+                int on = (bits >> (7 - col)) & 1;  // MSB->LSB
+                if (!on) continue;
+
+                // pintar bloque escalado
+                for (int yy = 0; yy < scale; yy++) {
+                    for (int xx = 0; xx < scale; xx++) {
+                        int px = x0 + col * scale + xx;
+                        int py = row * scale + yy;
+                        buf[py * w + px] = fg;
+                    }
+                }
+            }
+        }
+    }
+
+    // 5) dibujar el buffer rotado usando TU función existente (no tocamos el resto)
+    esp_err_t err = display_ili9488_35_draw_rgb565_rot90(x, y, w, h, buf, rot);
+
+    heap_caps_free(buf);
+    return err;
+}
+
+
