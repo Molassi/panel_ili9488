@@ -19,6 +19,10 @@
 #define WHITE 0xFFFF
 #define BLACK 0x0000
 
+/* Comienzo y fin de tabla de simbolos */
+#define FONT_FIRST_CHAR   ' '
+#define FONT_LAST_CHAR    ']'
+
 static const char *TAG = "Display check:";
 
 // --- Estado interno del componente ---
@@ -275,10 +279,13 @@ static const uint8_t font8x8_min[ ((']' - ' ') + 1) ][8] = {
 
 static inline const uint8_t *glyph8x8(char c)
 {
-    if (c < ' ' || c > 'Z') c = ' ';
-    const uint8_t *g = font8x8_min[c - ' '];
-    // si no está definido (todo 0), lo dejamos como espacio
-    return g;
+    uint8_t uc = (uint8_t)c; // evita problemas por char signed
+
+    if (uc < (uint8_t)FONT_FIRST_CHAR || uc > (uint8_t)FONT_LAST_CHAR) {
+        uc = (uint8_t)' '; // o '?' si querés
+    }
+
+    return font8x8_min[uc - (uint8_t)FONT_FIRST_CHAR];
 }
 
 // Dibuja un char 8x8 escalado (scale=1..N)
@@ -339,18 +346,7 @@ esp_err_t display_ili9488_35_draw_text_8x8(int x, int y, const char *txt, uint16
     return ESP_OK;
 }
 
-
-// Reusa tu función interna actual que dibuja UN char o tu tabla font.
-// Asumo que ya tenés un mecanismo de font dentro del .c.
-// Si tu función de texto actual ya pinta chars usando un glyph 8x8,
-// acá reutilizamos el mismo glyph y dibujamos sobre un buffer.
-
-static inline const uint8_t *glyph8x8(char c); // <- si ya la tenés, BORRAR esta línea
-// Si NO tenés glyph8x8, decime y te adapto al método que estés usando.
-
-esp_err_t display_ili9488_35_draw_text_8x8_rot90(int x, int y, const char *txt,
-                                                 uint16_t fg, uint16_t bg, int scale,
-                                                 display_rot90_t rot)
+esp_err_t display_ili9488_35_draw_text_8x8_rot90(int x, int y, const char *txt, uint16_t fg, uint16_t bg, int scale, display_rot90_t rot)
 {
     if (!txt) return ESP_ERR_INVALID_ARG;
     if (scale < 1) scale = 1;
@@ -406,4 +402,45 @@ esp_err_t display_ili9488_35_draw_text_8x8_rot90(int x, int y, const char *txt,
     return err;
 }
 
+esp_err_t display_ili9488_35_fill_rect_rgb565(int x, int y, int w, int h, uint16_t color)
+{
+    if (!s_panel || !s_buf565) return ESP_ERR_INVALID_STATE;
+    if (w <= 0 || h <= 0) return ESP_OK;
+
+    // Clipping básico para no salir de pantalla
+    if (x < 0) { w += x; x = 0; }
+    if (y < 0) { h += y; y = 0; }
+    if (x + w > s_hres) w = s_hres - x;
+    if (y + h > s_vres) h = s_vres - y;
+    if (w <= 0 || h <= 0) return ESP_OK;
+
+    const int max_lines = s_lines;   // ej: 40
+    int remaining = h;
+    int cur_y = y;
+
+    while (remaining > 0) {
+        int lines = (remaining > max_lines) ? max_lines : remaining;
+        int pixels = w * lines;
+
+        // Llenar buffer con el color
+        for (int i = 0; i < pixels; i++) {
+            s_buf565[i] = color;
+        }
+
+        esp_err_t err = esp_lcd_panel_draw_bitmap(
+            s_panel,
+            x,
+            cur_y,
+            x + w,
+            cur_y + lines,
+            s_buf565
+        );
+        if (err != ESP_OK) return err;
+
+        cur_y += lines;
+        remaining -= lines;
+    }
+
+    return ESP_OK;
+}
 

@@ -38,14 +38,24 @@ void app_main(void)
     // Primer prueba de escritura.
     display_ili9488_35_draw_text_8x8(10, 10, "COLVEN", 0xFFFF, 0x0000, 2);
     display_ili9488_35_draw_text_8x8(10, 50, "ABCDEFGHIJKLMNOPQRSTUVWXYZ []", 0xFFFF, 0x0000, 1);
-    display_ili9488_35_draw_text_8x8_rot90(200, 0, "TEST 123", 0xFFFF, 0x0000, 1, DISP_ROT_90_CCW);
-    display_ili9488_35_draw_text_8x8_rot90(0, 400, "TEST 123", 0xFFFF, 0x0000, 1, DISP_ROT_90_CCW);
+    //display_ili9488_35_draw_text_8x8_rot90(200, 0, "TEST 123", 0xFFFF, 0x0000, 1, DISP_ROT_90_CCW);
+    display_ili9488_35_draw_text_8x8_rot90(50, 100, "[HOLA]", 0xFFFF, 0x0000, 4, DISP_ROT_90_CCW);
+    display_ili9488_35_draw_text_8x8_rot90(100, 200, "[HOLA1 PRECIOSA]", 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
 
     //display_ili9488_35_draw_rgb565_rot90(10, 100, "Hola crack", 0xFFFF, 0x0000, s_rotation);
 
-    while (1)
-    {
-        vTaskDelay(1);
+    int counter = 0;
+
+    while (1) {
+        // borrar área
+        display_ili9488_35_fill_rect_rgb565(10, 50, 6 * 8 * 2, 8 * 2, 0x0000);
+
+        // escribir nuevo valor
+        char buf[12];
+        snprintf(buf, sizeof(buf), "%d", counter++);
+        display_ili9488_35_draw_text_8x8_rot90(10, 50, buf, 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
+
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
     
 }

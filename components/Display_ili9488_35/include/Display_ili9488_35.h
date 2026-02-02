@@ -59,11 +59,14 @@ esp_err_t display_ili9488_35_draw_rgb565(int x, int y, int w, int h, const uint1
 // Dibujar una imagen RGB565 rotada 90° CW/CCW (útil para assets 480x320)
 esp_err_t display_ili9488_35_draw_rgb565_rot90(int x, int y, int src_w, int src_h, const uint16_t *src_rgb565, display_rot90_t rot);
 
-// Texto simple 8x8 escalable (si ya la tenés; si no, comentala)
+// Texto simple 8x8 escalable
 esp_err_t display_ili9488_35_draw_text_8x8(int x, int y, const char *txt, uint16_t fg, uint16_t bg, int scale);
 
+// Texto simple 8x8 escalable rotado 90°
 esp_err_t display_ili9488_35_draw_text_8x8_rot90(int x, int y, const char *txt, uint16_t fg, uint16_t bg, int scale, display_rot90_t rot);
 
+// Rectangulo para ocultar textos.
+esp_err_t display_ili9488_35_fill_rect_rgb565(int x, int y, int w, int h, uint16_t color);
 
 #ifdef __cplusplus
 }
