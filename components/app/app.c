@@ -41,15 +41,16 @@ static void app_task(void *arg)
         // ------------------------------------------------
         // Acá va tu lógica principal de proceso
         // ------------------------------------------------
-        app_ctx.value++;
+            //app_ctx.value++;
 
-        ESP_LOGI(TAG, "Proceso ejecutándose, value=%d", app_ctx.value);
+            //ESP_LOGI(TAG, "Proceso ejecutándose, value=%d", app_ctx.value);
 
         // ------------------------------------------------
         // Notificar a la HMI que hay datos nuevos
         // (throttleado a 500 ms)
         // ------------------------------------------------
-        hmi_post_event(HMI_EVT_DATA_DIRTY);
+        // NOTA: PARA HACER PRUEBAS LO QUITO UN TOQUE.
+            //hmi_post_event(HMI_EVT_DATA_DIRTY);
 
         // ------------------------------------------------
         // Periodicidad controlada

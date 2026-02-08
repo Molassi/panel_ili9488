@@ -68,6 +68,6 @@ void app_main(void)
 
 void app_main(void)
 {
-    hmi_init();   // crea ui_task + buttons_task (secundario)
-    app_init();   // crea app_task (principal) o devuelve handle para crearla acá
+    hmi_init();     // crea ui_task + buttons_task (secundario)
+    app_init();     // crea app_task (principal) o devuelve handle para crearla acá
 }

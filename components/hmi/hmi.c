@@ -3,22 +3,24 @@
 #include "hmi_events.h"
 #include "hmi_buttons.h"
 
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
 
 #include "esp_log.h"
 
+#include "COLVEN_LOGO.c"
+#include "Display_ili9488_35.h"
+
 static const char *TAG = "HMI";
 
 // =================== Config (ajustá a tu HW) ===================
 #define HMI_SPLASH_MS   1500
 
-// Pines estándar de tu producto (cambiá por los tuyos)
-#define HMI_BTN1_GPIO   GPIO_NUM_18
-#define HMI_BTN2_GPIO   GPIO_NUM_19
-#define HMI_BTN3_GPIO   GPIO_NUM_21
+// GPIOs definidos como pulsadores de HMI.
+#define HMI_BTN1_GPIO   GPIO_NUM_14
+#define HMI_BTN2_GPIO   GPIO_NUM_33
+#define HMI_BTN3_GPIO   GPIO_NUM_32
 
 // Botones: polling/debounce
 #define HMI_BTN_POLL_MS     10
@@ -40,12 +42,19 @@ static bool          s_buttons_started = false;
 // =================== Draw (placeholder) ===================
 static void draw_screen(ui_state_t st)
 {
-    // Acá luego conectás tu LCD_ILI9488 (dibujar pantallas)
+    // Maquina de estados de pantallas.
     switch (st) {
-        case UI_SPLASH: ESP_LOGI(TAG, "[DRAW] SPLASH"); break;
+        // State 0: Pantalla inicio.
+        case UI_SPLASH: ESP_LOGI(TAG, "[DRAW] SPLASH"); 
+        display_ili9488_35_draw_rgb565_rot90(0, 0, 480, 320, COLVEN_LOGO_480_320, DISP_ROT_90_CCW);
+        break;
+        
         case UI_MAIN:   ESP_LOGI(TAG, "[DRAW] MAIN"); break;
+        
         case UI_WORK:   ESP_LOGI(TAG, "[DRAW] WORK"); break;
+        
         case UI_CONFIG: ESP_LOGI(TAG, "[DRAW] CONFIG"); break;
+        
         default: break;
     }
 }
@@ -55,7 +64,7 @@ static void ui_task(void *arg)
 {
     ui_state_t state = UI_SPLASH;
 
-    // 1) Splash una sola vez
+    // 1) Splash - imagen de inicio.
     draw_screen(UI_SPLASH);
     vTaskDelay(pdMS_TO_TICKS(HMI_SPLASH_MS));
 
@@ -131,6 +140,24 @@ static void ui_task(void *arg)
 // =================== API pública ===================
 void hmi_init(void)
 {
+    // Inicializo pantalla.
+    static const display_ili9488_35_cfg_t cfg = {
+        .host = SPI3_HOST,
+        .pin_sclk = 18,
+        .pin_mosi = 23,
+        .pin_miso = -1,
+        .pin_cs   = 5,
+        .pin_dc   = 2,
+        .pin_rst  = -1,
+        .hres     = 320,
+        .vres     = 480,
+        .pclk_hz  = 10 * 1000 * 1000,
+        .lines    = 40,
+        .rgb_endian = LCD_RGB_ENDIAN_BGR,
+    };
+    ESP_ERROR_CHECK(display_ili9488_35_init(&cfg));
+    ESP_LOGI(TAG, "Init display component...");
+
     // Creo una queue de 16 filas, devuelve null si no se pudo crear y da falla.
     s_hmi_queue = xQueueCreate(16, sizeof(hmi_event_t));
     if (!s_hmi_queue) {
