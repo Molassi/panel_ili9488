@@ -14,6 +14,9 @@ extern "C" {
  */
 void hmi_ui_task(void *arg);
 
+// Pido los valores que son editables por el usuario.
+void ui_config_draw_values(void);
+
 #ifdef __cplusplus
 }
 #endif

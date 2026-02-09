@@ -7,6 +7,8 @@
 #include "freertos/queue.h"
 
 #include "esp_log.h"
+#include "app.h"
+#include "Display_ili9488_35.h"
 
 // ======================================================
 // LOG
@@ -151,4 +153,27 @@ static void ui_draw_full(ui_state_t state)
         default:
             break;
     }
+}
+
+
+// Toma los valores editables por el usuario y los imprime en la pantalla.
+void ui_config_draw_values(void)
+{
+    char buf[32];
+    app_config_t cfg = app_get_config();
+
+    // Elegí coordenadas donde van los números (ajustalas a tu layout)
+    // OJO: vos estás usando rot90 y coordenadas (y,x). Mantené ese criterio.
+
+    // CANT CORTES
+    snprintf(buf, sizeof(buf), "%d", cfg.cant_cortes);
+    display_ili9488_35_draw_text_8x8_rot90(75, 100, buf, 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
+
+    // OFFSET 1
+    snprintf(buf, sizeof(buf), "%d", cfg.offset1);
+    display_ili9488_35_draw_text_8x8_rot90(100, 100, buf, 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
+
+    // OFFSET 2
+    snprintf(buf, sizeof(buf), "%d", cfg.offset2);
+    display_ili9488_35_draw_text_8x8_rot90(125, 100, buf, 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
 }

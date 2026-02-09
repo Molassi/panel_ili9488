@@ -27,6 +27,19 @@ typedef struct {
 
 static app_ctx_t app_ctx;
 
+static app_config_t s_user_cfg = {
+    .cant_cortes = 1000,
+    .offset1 = 100,
+    .offset2 = 500,
+};
+
+// Devuelve las variables modificables por el usuario.
+app_config_t app_get_config(void)
+{
+    return s_user_cfg;
+}
+
+
 // ======================================================
 // Tarea principal del sistema
 // ======================================================

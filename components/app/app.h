@@ -6,12 +6,15 @@
 extern "C" {
 #endif
 
-/**
- * @brief Inicializa el módulo de aplicación.
- *
- * Crea la tarea principal del sistema (app_task).
- * Esta es la lógica de proceso, NO la HMI.
- */
+// Variables modificable por el usuario.
+typedef struct {
+    int cant_cortes;
+    int offset1;   
+    int offset2;
+} app_config_t;
+
+app_config_t app_get_config(void);
+
 void app_init(void);
 
 #ifdef __cplusplus
