@@ -28,16 +28,18 @@ static const char *TAG = "HMI";
 #define HMI_BTN_DEBOUNCE_MS 40
 
 // Texto para pantallas.
-static const char *SK_MAIN   = "[ --- ]     [ CNF ]    [ INI ]";
-static const char *SK_WORK   = "[ --- ]     [ --- ]    [ STP ]";
-static const char *SK_CONFIG = "[ REG ]     [ OK  ]    [ BAJ ]";
+static const char *SK_MAIN        = "[ --- ]     [ CNF ]    [ INI ]";
+static const char *SK_WORK        = "[ --- ]     [ --- ]    [ STP ]";
+static const char *SK_CONFIG      = "[ REG ]     [ OK  ]    [ BAJ ]";
+static const char *SK_CONFIG_EDIT = "[ SUB ]     [ OK  ]    [ BAJ ]";
 
 // =================== Estado UI ===================
 typedef enum {
     UI_SPLASH = 0,
     UI_MAIN   = 1,
     UI_WORK   = 2,
-    UI_CONFIG = 3
+    UI_CONFIG = 3,
+    UI_CONFIG_EDIT = 4
 } ui_state_t;
 
 // =================== Globals internos ===================
@@ -81,6 +83,16 @@ static void draw_screen(ui_state_t st)
 
             //Imprimo los valores
             ui_config_draw_values();
+        break;
+
+        // State 3: Seleccion de parametro a configurar.
+        case UI_CONFIG_EDIT: ESP_LOGI(TAG, "[DRAW] CONFIG_EDIT");
+            display_ili9488_35_fill_rgb565(0x0000); // negro
+            display_ili9488_35_draw_text_8x8_rot90(0, 0,   "      EDICION PARAMETROS      ", 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
+            display_ili9488_35_draw_text_8x8_rot90(75, 0,  "CANT CORTES:                  ", 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
+            display_ili9488_35_draw_text_8x8_rot90(100, 0, "OFFSET AVANCE 1:              ", 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
+            display_ili9488_35_draw_text_8x8_rot90(125, 0, "OFFSET AVANCE 2:              ", 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
+            display_ili9488_35_draw_text_8x8_rot90(300, 0, SK_CONFIG_EDIT, 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
         break;
         
         default: break;
@@ -145,8 +157,12 @@ static void ui_task(void *arg)
 
             case UI_CONFIG:
                 // ejemplo: BTN2 vuelve a MAIN
-                if (evt == HMI_EVT_BTN1_SHORT) {
+                if (evt == HMI_EVT_BTN1_SHORT) {  
                     state = UI_MAIN;
+                    draw_screen(state);
+                }
+                if (evt == HMI_EVT_BTN2_SHORT) {  
+                    state = UI_CONFIG_EDIT;
                     draw_screen(state);
                 }
                 break;
@@ -155,6 +171,14 @@ static void ui_task(void *arg)
                 // ejemplo: BTN1 vuelve a MAIN
                 if (evt == HMI_EVT_BTN3_SHORT) {
                     state = UI_MAIN;
+                    draw_screen(state);
+                }
+                break;
+
+            case UI_CONFIG_EDIT:
+                // ejemplo: BTN1 vuelve a MAIN
+                if (evt == HMI_EVT_BTN2_SHORT) {
+                    state = UI_CONFIG;
                     draw_screen(state);
                 }
                 break;

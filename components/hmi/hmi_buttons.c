@@ -37,11 +37,8 @@ static void gpio_buttons_init(const buttons_config_t *cfg)
     gpio_config(&io);
 }
 
-static inline void process_btn(int raw, int *last_level, int *stable_level,
-                               TickType_t *last_change, TickType_t now,
-                               TickType_t debounce_ticks,
-                               bool active_low,
-                               QueueHandle_t q, hmi_event_t evt)
+static inline void process_btn(int raw, int *last_level, int *stable_level, TickType_t *last_change, TickType_t now,
+                               TickType_t debounce_ticks,bool active_low,QueueHandle_t q, hmi_event_t evt)
 {
     if (raw != *last_level) {
         *last_level = raw;

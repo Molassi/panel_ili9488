@@ -157,6 +157,7 @@ static void ui_draw_full(ui_state_t state)
 
 
 // Toma los valores editables por el usuario y los imprime en la pantalla.
+// Muesta valor actual.
 void ui_config_draw_values(void)
 {
     char buf[32];
