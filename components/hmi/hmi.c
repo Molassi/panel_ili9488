@@ -47,7 +47,22 @@ static QueueHandle_t s_hmi_queue = NULL;
 static TaskHandle_t  s_ui_task_handle = NULL;
 static bool          s_buttons_started = false;
 
-// =================== Draw (placeholder) ===================
+// Dibujo dinámico de offset1
+static void ui_config_draw_offset1(bool highlight)
+{
+    char buf[16];
+    app_config_t cfg = app_get_config();
+
+    uint16_t fg = highlight ? 0x0000 : 0xFFFF;
+    uint16_t bg = highlight ? 0xFFFF : 0x0000;
+
+    snprintf(buf, sizeof(buf), "%5d", cfg.offset1);
+
+    // AJUSTAR COORDENADAS
+    display_ili9488_35_draw_text_8x8_rot90(100, 100, buf, fg, bg, 2, DISP_ROT_90_CCW);
+}
+
+// Dibujo fondo de pantalla cada vez que cambio de estado.
 static void draw_screen(ui_state_t st)
 {
     // Maquina de estados de pantallas.
@@ -81,7 +96,7 @@ static void draw_screen(ui_state_t st)
             display_ili9488_35_draw_text_8x8_rot90(125, 0, "OFFSET AVANCE 2:              ", 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
             display_ili9488_35_draw_text_8x8_rot90(300, 0, SK_CONFIG, 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
 
-            //Imprimo los valores
+            // Imprimo todos los valores actuales
             ui_config_draw_values();
         break;
 
@@ -93,6 +108,11 @@ static void draw_screen(ui_state_t st)
             display_ili9488_35_draw_text_8x8_rot90(100, 0, "OFFSET AVANCE 1:              ", 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
             display_ili9488_35_draw_text_8x8_rot90(125, 0, "OFFSET AVANCE 2:              ", 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
             display_ili9488_35_draw_text_8x8_rot90(300, 0, SK_CONFIG_EDIT, 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
+            
+            // Imprimo todos los valores actuales
+            ui_config_draw_values();
+            // Imprimo valor a modificar
+            ui_config_draw_offset1(true);
         break;
         
         default: break;
@@ -177,9 +197,18 @@ static void ui_task(void *arg)
 
             case UI_CONFIG_EDIT:
                 // ejemplo: BTN1 vuelve a MAIN
-                if (evt == HMI_EVT_BTN2_SHORT) {
+                if (evt == HMI_EVT_BTN2_SHORT) {          // BTN2 - OK (Guardo)
                     state = UI_CONFIG;
                     draw_screen(state);
+                }else if (evt == HMI_EVT_BTN1_SHORT) {    // BTN1 - SUB (+)
+                    app_config_t cfg = app_get_config();
+                    app_set_offset1(cfg.offset1 + 1);
+                    // opcional: refrescar inmediato (sin esperar DATA_DIRTY)
+                    ui_config_draw_offset1(true);
+                } else if (evt == HMI_EVT_BTN3_SHORT) {   // BTN3 - BAJ (-)
+                    app_config_t cfg = app_get_config();
+                    app_set_offset1(cfg.offset1 - 1);
+                    ui_config_draw_offset1(true);
                 }
                 break;
 

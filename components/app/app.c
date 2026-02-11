@@ -33,12 +33,37 @@ static app_config_t s_user_cfg = {
     .offset2 = 500,
 };
 
-// Devuelve las variables modificables por el usuario.
+// Controlo que el valor este dentro de los limites.
+static int clamp_int(int v, int lo, int hi)
+{
+    if (v < lo) return lo;
+    if (v > hi) return hi;
+    return v;
+}
+
+// Devuelve estructura con valores de parametros
 app_config_t app_get_config(void)
 {
     return s_user_cfg;
 }
 
+void app_set_offset1(int value)
+{
+    // Límites para offset1
+    const int OFFSET_MIN = 0;
+    const int OFFSET_MAX = 5000;
+    
+    int newv = clamp_int(value, OFFSET_MIN, OFFSET_MAX);
+    if (newv == s_user_cfg.offset1){
+        return;
+    }
+
+    s_user_cfg.offset1 = newv;
+    ESP_LOGI(TAG, "offset1=%d", s_user_cfg.offset1);
+
+    // avisar a HMI que hay datos nuevos.
+    (void)hmi_post_event(HMI_EVT_DATA_DIRTY);
+}
 
 // ======================================================
 // Tarea principal del sistema
@@ -78,16 +103,6 @@ static void app_task(void *arg)
 void app_init(void)
 {
     app_ctx.value = 0;
-
-    xTaskCreatePinnedToCore(
-        app_task,
-        "app_task",
-        APP_TASK_STACK,
-        NULL,
-        APP_TASK_PRIO,
-        NULL,
-        APP_TASK_CORE
-    );
-
+    xTaskCreatePinnedToCore(app_task,"app_task",APP_TASK_STACK,NULL,APP_TASK_PRIO,NULL,APP_TASK_CORE);
     ESP_LOGI(TAG, "app_init OK");
 }
