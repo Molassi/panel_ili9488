@@ -33,7 +33,7 @@ static const char *SK_WORK        = "[ --- ]     [ --- ]    [ STP ]";
 static const char *SK_CONFIG      = "[ REG ]     [ OK  ]    [ BAJ ]";
 static const char *SK_CONFIG_EDIT = "[ SUB ]     [ OK  ]    [ BAJ ]";
 
-// =================== Estado UI ===================
+// maquina de estados.
 typedef enum {
     UI_SPLASH = 0,
     UI_MAIN   = 1,
@@ -98,6 +98,8 @@ static void draw_screen(ui_state_t st)
 
             // Imprimo todos los valores actuales
             ui_config_draw_values();
+            // Imprimo seleccion.
+            ui_draw_selection();
         break;
 
         // State 3: Seleccion de parametro a configurar.
@@ -185,6 +187,10 @@ static void ui_task(void *arg)
                     state = UI_CONFIG_EDIT;
                     draw_screen(state);
                 }
+                if (evt == HMI_EVT_BTN3_SHORT) {  
+                    ui_config_next_field();
+                    ui_draw_selection();
+                }
                 break;
 
             case UI_WORK:
@@ -196,21 +202,26 @@ static void ui_task(void *arg)
                 break;
 
             case UI_CONFIG_EDIT:
-                // ejemplo: BTN1 vuelve a MAIN
-                if (evt == HMI_EVT_BTN2_SHORT) {          // BTN2 - OK (Guardo)
+
+                if (evt == HMI_EVT_BTN2_SHORT) {          // OK -> salir de edición
                     state = UI_CONFIG;
                     draw_screen(state);
-                }else if (evt == HMI_EVT_BTN1_SHORT) {    // BTN1 - SUB (+)
-                    app_config_t cfg = app_get_config();
-                    app_set_offset1(cfg.offset1 + 1);
-                    // opcional: refrescar inmediato (sin esperar DATA_DIRTY)
-                    ui_config_draw_offset1(true);
-                } else if (evt == HMI_EVT_BTN3_SHORT) {   // BTN3 - BAJ (-)
-                    app_config_t cfg = app_get_config();
-                    app_set_offset1(cfg.offset1 - 1);
-                    ui_config_draw_offset1(true);
+                    break;
                 }
-                break;
+
+                if (evt == HMI_EVT_BTN1_SHORT) {          // BTN1 actúa como SUB (+)
+                    cfg_apply_delta_selected(+1);
+                    ui_config_draw_values();              // refresco inmediato
+                    break;
+                }
+
+                if (evt == HMI_EVT_BTN3_SHORT) {          // BTN3 BAJ (-)
+                cfg_apply_delta_selected(-1);
+                ui_config_draw_values();
+                    break;
+                }
+
+    break;
 
             default:
                 break;

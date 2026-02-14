@@ -18,11 +18,8 @@ static const char *TAG = "APP";
 
 #define APP_UPDATE_MS    500   // no actualizar HMI más rápido que esto
 
-// ======================================================
-// Contexto de la aplicación
-// ======================================================
 typedef struct {
-    int value;             // variable de ejemplo (luego será lo que quieras)
+    int value;             // variable de ejemplo 
 } app_ctx_t;
 
 static app_ctx_t app_ctx;
@@ -47,11 +44,29 @@ app_config_t app_get_config(void)
     return s_user_cfg;
 }
 
+// modificación de variables.
+void app_set_cant_cortes(int value)
+{
+    // Límites para cantidad de cortes
+    const int OFFSET_MIN = 0;
+    const int OFFSET_MAX = 1000;
+    
+    int newv = clamp_int(value, OFFSET_MIN, OFFSET_MAX);
+    if (newv == s_user_cfg.cant_cortes){
+        return;
+    }
+
+    s_user_cfg.cant_cortes = newv;
+    ESP_LOGI(TAG, "cant_cortes=%d", s_user_cfg.cant_cortes);
+
+    // avisar a HMI que hay datos nuevos.
+    (void)hmi_post_event(HMI_EVT_DATA_DIRTY);
+}
 void app_set_offset1(int value)
 {
     // Límites para offset1
     const int OFFSET_MIN = 0;
-    const int OFFSET_MAX = 5000;
+    const int OFFSET_MAX = 200;
     
     int newv = clamp_int(value, OFFSET_MIN, OFFSET_MAX);
     if (newv == s_user_cfg.offset1){
@@ -64,7 +79,23 @@ void app_set_offset1(int value)
     // avisar a HMI que hay datos nuevos.
     (void)hmi_post_event(HMI_EVT_DATA_DIRTY);
 }
+void app_set_offset2(int value)
+{
+    // Límites para offset2
+    const int OFFSET_MIN = 0;
+    const int OFFSET_MAX = 1000;
+    
+    int newv = clamp_int(value, OFFSET_MIN, OFFSET_MAX);
+    if (newv == s_user_cfg.offset2){
+        return;
+    }
 
+    s_user_cfg.offset2 = newv;
+    ESP_LOGI(TAG, "offset1=%d", s_user_cfg.offset2);
+
+    // avisar a HMI que hay datos nuevos.
+    (void)hmi_post_event(HMI_EVT_DATA_DIRTY);
+}
 // ======================================================
 // Tarea principal del sistema
 // ======================================================

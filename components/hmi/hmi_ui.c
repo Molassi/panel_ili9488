@@ -10,14 +10,26 @@
 #include "app.h"
 #include "Display_ili9488_35.h"
 
-// ======================================================
-// LOG
-// ======================================================
 static const char *TAG = "HMI_UI";
 
-// ======================================================
+// Selector de configuracion
+typedef enum{
+    CFG_CANT_CORTES = 0,
+    CFG_OFF1,
+    CFG_OFF2,
+    CFG_COUNT
+} cfg_field_t;
+// Siempre comienzo desde CFG_CANT_CORTES.
+static cfg_field_t s_cfg_sel = CFG_CANT_CORTES;
+
+// Posiciones pantalla, coordenadas donde va el indicador.
+    const int x_val = 100;
+    const int x_mark = 20;
+    const int y_cant_cor = 75;
+    const int y_offset1 = 100;
+    const int y_offset2 = 125;
+
 // Estados de la UI
-// ======================================================
 typedef enum {
     UI_STATE_SPLASH = 0,
     UI_STATE_MAIN,
@@ -76,9 +88,29 @@ void hmi_ui_task(void *arg)
     }
 }
 
-// ======================================================
+void cfg_apply_delta_selected(int delta)
+{
+    app_config_t cfg = app_get_config();
+
+    switch (s_cfg_sel) {
+        case CFG_CANT_CORTES:
+            app_set_cant_cortes(cfg.cant_cortes + delta);
+            break;
+
+        case CFG_OFF1:
+            app_set_offset1(cfg.offset1 + delta);
+            break;
+
+        case CFG_OFF2:
+            app_set_offset2(cfg.offset2 + delta);
+            break;
+
+        default:
+            break;
+    }
+}
+
 // Manejo de eventos según estado
-// ======================================================
 static void ui_handle_event(hmi_event_t evt)
 {
     switch (ui_ctx.state) {
@@ -119,62 +151,54 @@ static void ui_handle_event(hmi_event_t evt)
     }
 }
 
-// ======================================================
-// Dibujo completo de pantalla (placeholder)
-// ======================================================
-static void ui_draw_full(ui_state_t state)
+// Imprime indicador en estado CONFIG.
+void ui_draw_selection(void)
 {
-    switch (state) {
+    // CANT CORTES
+    if(s_cfg_sel == CFG_CANT_CORTES){
+        display_ili9488_35_draw_text_8x8_rot90(y_cant_cor, x_mark, "-", 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
+    }else{
+        display_ili9488_35_draw_text_8x8_rot90(y_cant_cor, x_mark, " ", 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
+    }
 
-        case UI_STATE_SPLASH:
-            ESP_LOGI(TAG, "[DRAW] SPLASH screen");
-            // lcd_clear();
-            // lcd_draw_logo();
-            break;
+    // OFFSET 1
+    if(s_cfg_sel == CFG_OFF1){
+        display_ili9488_35_draw_text_8x8_rot90(y_offset1, x_mark, "-", 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
+    }else{
+        display_ili9488_35_draw_text_8x8_rot90(y_offset1, x_mark, " ", 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
+    }
 
-        case UI_STATE_MAIN:
-            ESP_LOGI(TAG, "[DRAW] MAIN screen");
-            // lcd_clear();
-            // lcd_draw_main_static();
-            break;
-
-        case UI_STATE_WORK:
-            ESP_LOGI(TAG, "[DRAW] WORK screen");
-            // lcd_clear();
-            // lcd_draw_work_static();
-            break;
-
-        case UI_STATE_CONFIG:
-            ESP_LOGI(TAG, "[DRAW] CONFIG screen");
-            // lcd_clear();
-            // lcd_draw_config_static();
-            break;
-
-        default:
-            break;
+    // OFFSET 2
+    if(s_cfg_sel == CFG_OFF2){
+        display_ili9488_35_draw_text_8x8_rot90(y_offset2, x_mark, "-", 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
+    }else{
+        display_ili9488_35_draw_text_8x8_rot90(y_offset2, x_mark, " ", 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
     }
 }
 
-
 // Toma los valores editables por el usuario y los imprime en la pantalla.
-// Muesta valor actual.
 void ui_config_draw_values(void)
 {
     char buf[32];
     app_config_t cfg = app_get_config();
 
-    // Elegí coordenadas donde van los números (ajustalas a tu layout)
-    // OJO: vos estás usando rot90 y coordenadas (y,x). Mantené ese criterio.
-
     // CANT CORTES
-    snprintf(buf, sizeof(buf), "%d", cfg.cant_cortes);
-    display_ili9488_35_draw_text_8x8_rot90(75, 100, buf, 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
+    snprintf(buf, sizeof(buf), "%5d", cfg.cant_cortes);
+    display_ili9488_35_draw_text_8x8_rot90(y_cant_cor, x_val, buf, 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
 
     // OFFSET 1
-    snprintf(buf, sizeof(buf), "%d", cfg.offset1);
-    display_ili9488_35_draw_text_8x8_rot90(100, 100, buf, 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
+    snprintf(buf, sizeof(buf), "%5d", cfg.offset1);
+    display_ili9488_35_draw_text_8x8_rot90(100, x_val, buf, 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
 
     // OFFSET 2
-    snprintf(buf, sizeof(buf), "%d", cfg.offset2);
-    display_ili9488_35_draw_text_8x8_rot90(125, 100, buf, 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
+    snprintf(buf, sizeof(buf), "%5d", cfg.offset2);
+    display_ili9488_35_draw_text_8x8_rot90(125, x_val, buf, 0xFFFF, 0x0000, 2, DISP_ROT_90_CCW);
 }
+
+// Modifica el campo de seleccion.
+void ui_config_next_field(void)
+{
+    s_cfg_sel = (cfg_field_t)((s_cfg_sel + 1) % CFG_COUNT);
+}
+
+ 
