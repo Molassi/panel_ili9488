@@ -42,7 +42,7 @@ typedef enum {
     UI_CONFIG_EDIT = 4
 } ui_state_t;
 
-// =================== Globals internos ===================
+// Globales internos
 static QueueHandle_t s_hmi_queue = NULL;
 static TaskHandle_t  s_ui_task_handle = NULL;
 static bool          s_buttons_started = false;
@@ -58,9 +58,10 @@ static void ui_config_draw_offset1(bool highlight)
 
     snprintf(buf, sizeof(buf), "%5d", cfg.offset1);
 
-    // AJUSTAR COORDENADAS
     display_ili9488_35_draw_text_8x8_rot90(100, 100, buf, fg, bg, 2, DISP_ROT_90_CCW);
 }
+
+
 
 // Dibujo fondo de pantalla cada vez que cambio de estado.
 static void draw_screen(ui_state_t st)
@@ -114,14 +115,15 @@ static void draw_screen(ui_state_t st)
             // Imprimo todos los valores actuales
             ui_config_draw_values();
             // Imprimo valor a modificar
-            ui_config_draw_offset1(true);
+            //ui_config_draw_offset1(true);
+            ui_config_draw_field(true);
         break;
         
         default: break;
     }
 }
 
-// =================== UI Task ===================
+// =================== ESTADOS ===================
 static void ui_task(void *arg)
 {
     ui_state_t state = UI_SPLASH;
@@ -211,13 +213,13 @@ static void ui_task(void *arg)
 
                 if (evt == HMI_EVT_BTN1_SHORT) {          // BTN1 actúa como SUB (+)
                     cfg_apply_delta_selected(+1);
-                    ui_config_draw_values();              // refresco inmediato
+                    ui_config_draw_field(true);           // Inverto color del seleccionado y lo imprimo.
                     break;
                 }
 
                 if (evt == HMI_EVT_BTN3_SHORT) {          // BTN3 BAJ (-)
-                cfg_apply_delta_selected(-1);
-                ui_config_draw_values();
+                    cfg_apply_delta_selected(-1);
+                    ui_config_draw_field(true);           // Inverto color del seleccionado y lo imprimo.
                     break;
                 }
 

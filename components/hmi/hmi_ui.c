@@ -12,13 +12,7 @@
 
 static const char *TAG = "HMI_UI";
 
-// Selector de configuracion
-typedef enum{
-    CFG_CANT_CORTES = 0,
-    CFG_OFF1,
-    CFG_OFF2,
-    CFG_COUNT
-} cfg_field_t;
+
 // Siempre comienzo desde CFG_CANT_CORTES.
 static cfg_field_t s_cfg_sel = CFG_CANT_CORTES;
 
@@ -199,6 +193,51 @@ void ui_config_draw_values(void)
 void ui_config_next_field(void)
 {
     s_cfg_sel = (cfg_field_t)((s_cfg_sel + 1) % CFG_COUNT);
+}
+
+
+
+// ES PARA QUITAR ui_config_draw_offset1(bool highlight) - MAS GENERAL Y MEJOR - Fase de prueba aún.
+void ui_config_draw_field(bool editing)
+{
+    char buf[16];
+    app_config_t cfg = app_get_config();
+
+    int value = 0;
+    int y = 0;
+
+    // 1) Determinar qué valor y qué posición usar
+    switch (s_cfg_sel)
+    {
+        case CFG_CANT_CORTES:
+            value = cfg.cant_cortes;
+            y = 75;
+            break;
+
+        case CFG_OFF1:
+            value = cfg.offset1;
+            y = 100;
+            break;
+
+        case CFG_OFF2:
+            value = cfg.offset2;
+            y = 125;
+            break;
+
+        default:
+            return;
+    }
+
+    // 2) Determinar si se debe invertir
+    //bool highlight = (editing && (field == s_cfg_sel));
+    bool highlight = editing;
+
+    uint16_t fg = highlight ? 0x0000 : 0xFFFF;
+    uint16_t bg = highlight ? 0xFFFF : 0x0000;
+
+    snprintf(buf, sizeof(buf), "%5d", value);
+
+    display_ili9488_35_draw_text_8x8_rot90(y, 100, buf, fg, bg, 2, DISP_ROT_90_CCW);
 }
 
  

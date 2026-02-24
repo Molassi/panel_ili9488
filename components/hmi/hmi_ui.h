@@ -4,6 +4,14 @@
 extern "C" {
 #endif
 
+// Selector de configuracion
+typedef enum{
+    CFG_CANT_CORTES = 0,
+    CFG_OFF1,
+    CFG_OFF2,
+    CFG_COUNT
+} cfg_field_t;
+
 /**
  * @brief Tarea de la interfaz HMI (UI).
  *
@@ -24,6 +32,8 @@ void ui_draw_selection(void);
 void ui_config_next_field(void);
 
 void cfg_apply_delta_selected(int);
+
+void ui_config_draw_field(bool editing);
 
 
 #ifdef __cplusplus
